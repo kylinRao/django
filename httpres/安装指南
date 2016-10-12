@@ -1,0 +1,287 @@
+http://www.linuxidc.com/Linux/2016-02/128714.htm
+
+
+繁體
+你好，游客 登录 注册 搜索
+Linux公社	
+首页Linux新闻Linux教程数据库技术Linux编程服务器应用Linux安全Linux下载Linux认证Linux主题Linux壁纸Linux软件数码手机电脑
+首页 → Linux教程
+背景：#EDF0F5 #FAFBE6 #FFF2E2 #FDE6E0 #F3FFE1 #DAFAF3 #EAEAEF 默认 阅读新闻
+Ubuntu 14.04下Django+MySQL安装部署全过程
+
+[日期：2016-02-26]	来源：Linux社区  作者：rencm	[字体：大 中 小]
+一、简要步骤。（阿里云Ubuntu14.04）
+
+Python安装
+Django
+Mysql的安装与配置
+　　记录一下我的部署过程，也方便一些有需要的童鞋，大神勿喷~
+
+二、Python的安装
+
+由于博主使用的环境是Ubuntu14.04，所以系统自带了Python2.7.6。
+
+我们可以使用Python –V查看自己Ubuntu中的Python版本。
+
+ 
+
+三、Django
+
+1、现在Django的版本已经到1.9.2了。我们可以到官网去下载，然后解压安装。
+
+下载地址：http://www.djangoproject.com/download/
+
+这里已经下载好了
+
+ 
+
+2、解压安装
+
+1
+tar xzvf Django-1.9.2.tar.gz
+1
+cd Django-1.9.2/
+1
+sudo python setup.py install
+这里会提示一个报错是因为setuptools没有安装，我们再安装一个setuptools就好了。
+
+
+
+Python2.x：
+
+1
+wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
+Python 3.x
+
+1
+wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python3.4
+然后再次安装Django即可成功。
+
+1
+sudo python setup.py install
+ 
+
+安装成功。
+
+3、搭建项目
+
+要创建一个Django项目非常简单，使用startproject命令，输入项目名称：
+
+django-admin.py startproject PPNotes
+
+Django会在当前目录下面创建一个PPNotes项目。里面的文件如下所示：
+
+root@iZ94a2sp0pwZ:/work/Django-1.9.2# tree PPNotes/
+PPNotes/
+├── manage.py
+└── PPNotes
+    ├── __init__.py
+    ├── settings.py
+    ├── urls.py
+    └── wsgi.py
+1 directory, 5 files
+__init__.py：Python特性，可以是空文件，表明这个文件夹是一个可以导入的包。
+settings.py：配置文件，本文主要修改数据库信息、模板目录、加载模块的信息。
+url.py：URL配置文件，指定函数与URL的映射关系。
+wsgi.py：本文中不会使用，nginx/apache+wsgi在生产环境中运行Django时使用
+4、启动Django
+
+创建完成之后，我们可以在项目文件夹里面启动Django自带的web服务器。
+
+1
+python manage.py runserver 0.0.0.0:8080
+ 
+
+这时候很明显，我们需要执行一下python manage.py migrate
+
+话说这个到底有什么用呢，它可以让我们在修改Model后可以在不影响现有数据的前提下重建表结构。
+
+再次python manage.py runserver 0.0.0.0:8080
+
+root@iZ94a2sp0pwZ:/work/Django-1.9.2/PPNotes# python manage.py runserver 0.0.0.0:8080
+
+Performing system checks...
+
+System check identified no issues (0 silenced).
+
+February 26, 2016 - 04:11:33
+
+Django version 1.9.2, using settings 'PPNotes.settings'
+
+Starting development server at http://0.0.0.0:8080/
+
+Quit the server with CONTROL-C.
+表示已经成功，下面我们用浏览器打开试试
+
+ 
+
+OK，Django项目搭建成功。下面的步骤就是配置Mysql数据库。
+
+四、Mysql的安装与配置。
+
+1、  Django默认的数据库是sqlite，我们可以看到项目文件夹下面有个自动生成的db.sqlite3文件。而我们是需要使用Mysql的。
+
+2、  要让Django支持Mysql数据库，我们需要改一下配置文件settings.py（mysite/mysite目录下面）。知道DATABASES进行如下修改即可。
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 数据库名, 
+        'USER': '用户名,
+        'PASSWORD': '密码', 
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+    }
+}
+3、  安装Mysql
+
+1
+sudo apt-get install mysql-server mysql-client
+1
+sudo apt-get install libmysqld-dev
+在这个过程他会提示你输入root的密码并确认密码。
+
+Django(Python)操作MySQL依赖第三方包，所以要先安装MySQL for Python
+
+1
+sudo apt-get install python-dev
+1
+wget https://pypi.python.org/packages/source/M/MySQL-python/MySQL-python-1.2.5.zip
+1
+解压MySQL-python-1.2.5.zip
+1
+cd MySQL-python-1.2.5/
+1
+sudo python setup.py install
+4、  配置mysql远程访问权限（用户名密码自行修改）
+
+?
+1
+2
+3
+GRANT ALL PRIVILEGES ON *.* TO '用户名'@'%' IDENTIFIED BY '密码' WITH GRANT OPTION;
+ 
+FLUSH  PRIVILEGES;（配置立即生效）
+ 
+
+这个时候我们还是无法远程连接Mysql，下面还得修改/etc/mysql/my.cnf文件；
+
+将bind-address                  = 127.0.0.1中的IP地址修改为0.0.0.0
+
+重启mysql
+
+1
+service mysql restart
+OK，远程连接成功。
+
+5、  新建数据库
+
+新建一个数据库，名字需要续我们前面配置Django中settings.py里面的DATABASES里面的数据库名一致。
+
+6、  再次执行python manage.py migrate
+
+ 
+
+当我们看到新建的数据库中增加了如上所以的表，证明Mysql已经配置成功。
+
+创建管理员账户
+
+1
+python manage.py createsuperuser
+ 
+1
+python manage.py runserver 0.0.0.0:8080
+ 
+
+OK，大功告成。
+
+五、附加启动脚本。start.sh
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+#!/bin/bash
+cd /work/Django-1.9/PPNotes
+nohup python manage.py runserver 0.0.0.0:8000  >/dev/null 2>&1 &
+while true
+do
+#PIDS=`ps -ef |grep 8000 |grep -v grep | awk '{print $2}'`
+num=`ps -ef|grep -v grep|grep 8000|wc -l`
+if [ $num -eq 0 ];then
+cd /work/Django-1.9/PPNotes
+nohup python manage.py runserver 0.0.0.0:8000  >/dev/null 2>&1 &
+fi
+sleep 10
+done
+Django1.8返回json字符串和接收post的json字符串内容  http://www.linuxidc.com/Linux/2015-07/120226.htm
+
+如何使用 Docker 组件开发 Django 项目？  http://www.linuxidc.com/Linux/2015-07/119961.htm
+
+Ubuntu Server 12.04 安装Nginx+uWSGI+Django环境 http://www.linuxidc.com/Linux/2012-05/60639.htm 
+
+Django+Nginx+uWSGI 部署 http://www.linuxidc.com/Linux/2013-02/79862.htm 
+
+Django实战教程 http://www.linuxidc.com/Linux/2013-09/90277.htm 
+
+Django Python MySQL Linux 开发环境搭建 http://www.linuxidc.com/Linux/2013-09/90638.htm 
+
+Django 的详细介绍：请点这里
+Django 的下载地址：请点这里
+
+更多Ubuntu相关信息见Ubuntu 专题页面 http://www.linuxidc.com/topicnews.aspx?tid=2
+
+本文永久更新链接地址：http://www.linuxidc.com/Linux/2016-02/128714.htm
+
+linux
+Fedora&Ubuntu 下使用gulp 报错 Error: watch ENOSPC 解决方案
+修改CentOS6.5默认主机名(root下操作)
+相关资讯       Django 
+Django 安全限制绕过漏洞(CVE-2016  (今 20:36)
+Django 1.10提供了PostgreSQL中的  (08月12日)
+Django Book 2.0 中文版 PDF  (02月03日)
+自动部署Django项目详解  (10月06日)
+Django 之管理界面  (07月01日)
+Django Web实现动态三级联动  (02月03日)
+本文评论 　　查看全部评论 (0)
+表情： 表情 姓名： 
+匿名
+  匿名 字数 
+0
+ 
+
+
+　　　同意评论声明 　　　请登录
+
+评论声明
+尊重网上道德，遵守中华人民共和国的各项有关法律法规
+承担一切因您的行为而直接或间接导致的民事或刑事法律责任
+本站管理人员有权保留或删除其管辖留言中的任意内容
+本站有权在网站内转载或引用您的评论
+参与本评论即表明您已经阅读并接受上述条款
+最新资讯
+Django 安全限制绕过漏洞(CVE-2016-7401)
+Apache MyFaces Trinidad CoreResponseStat
+ClamAV 拒绝服务漏洞(CVE-2016-1371)
+Ceph RGW代码信息泄露漏洞(CVE-2016-7031)
+OpenJPEG convert.c 拒绝服务漏洞(CVE-2016
+unADF 任意代码执行漏洞(CVE-2016-1244)
+ClamAV 拒绝服务漏洞(CVE-2016-1372)
+386BSD 在22年后释出了更新
+ELK stack实战之结合rsyslog分析系统日志(
+Filebeat的架构分析、配置解释与示例
+Linux公社简介 - 广告服务 - 网站地图 - 帮助信息 - 联系我们
+本站（LinuxIDC）所刊载文章不代表同意其说法或描述，仅为提供更多信息，也不构成任何建议。
+主编：漏网的鱼 (QQ:3165270) 联系邮箱: (如有版权及广告合作请联系) 
+本站带宽由[MUU.CC]友情提供
+关注Linux，关注LinuxIDC.com，请向您的QQ好友宣传LinuxIDC.com，多谢支持！ 
+Copyright © 2006-2016　Linux公社　All rights reserved 沪ICP备15008072号-1号
